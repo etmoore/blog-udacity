@@ -1,0 +1,16 @@
+{% extends "main.html" %}
+{% block content %}
+
+  <form method="post" action="#">
+    <div class="subject">
+      <label for="subject">Subject</label>
+      <input type="text" name="subject">
+    </div>
+    <div class="content">
+      <label for="content">Content</label>
+      <textarea name="content"></textarea>
+    </div>
+    <input type="submit">
+  </form>
+
+{% endblock %}
