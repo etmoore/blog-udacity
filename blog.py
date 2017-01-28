@@ -33,7 +33,8 @@ class Handler(webapp2.RequestHandler):
 
 class BlogIndex(Handler):
     def get(self):
-        self.render('blog-index.html')
+        blogs = Blog.all()
+        self.render('blog-index.html', blogs=blogs)
 
 
 class NewPost(Handler):

@@ -5,9 +5,11 @@
 
   <hr>
 
+  {% for blog in blogs %}
   <div class="post">
-    <h2 class="post-subject">Subject</h2>
-    <p class="post-body">Body</p>
+    <h2 class="post-subject">{{blog.subject}}</h2>
+    <p class="post-body">{{blog.content}}</p>
   </div>
+  {% endfor %}
 
 {% endblock %}
