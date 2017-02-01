@@ -154,10 +154,14 @@ class Signup(Handler):
 
 class Welcome(Handler):
     def get(self):
-        user_id = int(self.read_secure_cookie('user_id'))
-        user = User.get_by_id(user_id)
+        user_id = self.read_secure_cookie('user_id')
 
-        self.render('welcome.html', user=user)
+        if user_id:
+            user = User.get_by_id(int(user_id))
+            self.render('welcome.html', user=user)
+
+        else:
+            self.redirect('/signup')
 
 #### SERVER STUFF ####
 routes = [
