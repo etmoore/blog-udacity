@@ -2,6 +2,10 @@ import os
 import webapp2
 import jinja2
 import re
+import random
+from string import letters
+import hashlib
+import hmac
 
 from google.appengine.ext import db
 
@@ -17,6 +21,12 @@ class Post(db.Model):
     created = db.DateTimeProperty(auto_now_add = True, required = True)
 
 
+class User(db.Model):
+    username = db.StringProperty(required = True)
+    pw_hash = db.StringProperty(required = True)
+    email = db.StringProperty()
+
+
 #### BLOG STUFF ####
 
 def valid_username(username):
@@ -30,6 +40,18 @@ def valid_password(password):
 def valid_email(email):
     EMAIL_RE = re.compile(r"^[\S]+@[\S]+.[\S]+$")
     return not email or EMAIL_RE.match(email)
+
+def make_salt(length=5):
+    return ''.join(random.choice(letters) for x in range(length))
+
+def make_pw_hash(username, password, salt=None):
+    salt = salt or make_salt()
+    h = hashlib.sha256(username + password + salt).hexdigest()
+    return '%s,%s' % (salt, h)
+
+secret = "bananabread"
+def make_secure_val(value):
+    return '%s|%s' % (value, hmac.new(secret, value).hexdigest())
 
 
 class Handler(webapp2.RequestHandler):
@@ -107,9 +129,18 @@ class Signup(Handler):
             self.render('signup-form.html', **params)
 
         else:
-            print "in the else statement"
-        # save username
-        # render the blog index
+            pw_hash = make_pw_hash(username, password)
+            u = User(username=username,
+                     pw_hash=pw_hash,
+                     email=email)
+            u.put()
+
+            # set cookie
+            user_id = str(u.key().id())
+            secure_cookie = make_secure_val(user_id)
+            self.response.set_cookie('user_id', secure_cookie)
+
+            self.redirect('/')
 
 #### SERVER STUFF ####
 routes = [
