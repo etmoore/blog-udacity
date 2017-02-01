@@ -1,6 +1,7 @@
 import os
 import webapp2
 import jinja2
+import re
 
 from google.appengine.ext import db
 
@@ -13,11 +14,24 @@ jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
 class Post(db.Model):
     subject = db.StringProperty(required = True)
     content = db.TextProperty(required = True)
-    created = db.DateTimeProperty(auto_now_add = True,
-                                  required = True)
+    created = db.DateTimeProperty(auto_now_add = True, required = True)
 
 
 #### BLOG STUFF ####
+
+def valid_username(username):
+    USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
+    return USER_RE.match(username)
+
+def valid_password(password):
+    PASSWORD_RE = re.compile(r"^.{3,20}$")
+    return PASSWORD_RE.match(password)
+
+def valid_email(email):
+    EMAIL_RE = re.compile(r"^[\S]+@[\S]+.[\S]+$")
+    return not email or EMAIL_RE.match(email)
+
+
 class Handler(webapp2.RequestHandler):
 
     def write(self, *a, **kw):
@@ -60,11 +74,49 @@ class PostShow(Handler):
         self.render('post-show.html', post=post)
 
 
+class Signup(Handler):
+    def get(self):
+        self.render('signup-form.html')
+
+    def post(self):
+        have_error = False
+        username = self.request.get('username')
+        password = self.request.get('password')
+        verify = self.request.get('verify')
+        email = self.request.get('email')
+
+        params = dict(username=username, email=email)
+
+        if not valid_username(username):
+            params['error_username'] = "That's not a valid username."
+            have_error = True
+
+        if not valid_password(password):
+            params['error_password'] = "That's not a valid password."
+            have_error = True
+
+        if verify != password:
+            params['error_verify'] = "Your passwords didn't match."
+            have_error = True
+
+        if not valid_email(email):
+            params['error_email'] = "That's not a valid email."
+            have_error = True
+
+        if have_error:
+            self.render('signup-form.html', **params)
+
+        else:
+            print "in the else statement"
+        # save username
+        # render the blog index
+
 #### SERVER STUFF ####
 routes = [
            ('/', PostIndex),
            ('/newpost', PostNew),
            ('/(\d+)', PostShow),
+           ('/signup', Signup),
          ]
 
 app = webapp2.WSGIApplication(routes=routes, debug=True)
