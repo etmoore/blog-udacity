@@ -1,0 +1,16 @@
+{% extends "main.html" %}
+{% block content %}
+
+  <a href="/newpost">New Post</a>
+
+  <hr>
+
+  {% for post in posts %}
+  <div class="post">
+    <h2 class="post-subject">{{post.subject}}</h2>
+    <p class="post-body">{{post.content}}</p>
+    <a href="/{{post.key().id()}}">Permalink</a>
+  </div>
+  {% endfor %}
+
+{% endblock %}

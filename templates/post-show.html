@@ -1,0 +1,14 @@
+{% extends "main.html" %}
+{% block content %}
+
+  <a href="/newpost">New Post</a>
+  <a href="/">Post Index</a>
+
+  <hr>
+
+  <div class="post">
+    <h2 class="post-subject">{{post.subject}}</h2>
+    <p class="post-body">{{post.content}}</p>
+  </div>
+
+{% endblock %}
