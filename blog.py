@@ -53,6 +53,11 @@ secret = "bananabread"
 def make_secure_val(value):
     return '%s|%s' % (value, hmac.new(secret, value).hexdigest())
 
+def check_secure_val(secure_value):
+    value = secure_value.split('|')[0]
+    if secure_value == make_secure_val(value):
+        return value
+
 
 class Handler(webapp2.RequestHandler):
 
@@ -65,6 +70,11 @@ class Handler(webapp2.RequestHandler):
 
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
+
+    def read_secure_cookie(self, cookie_name):
+        cookie_val = self.request.cookies.get(cookie_name)
+        if cookie_val:
+            return check_secure_val(cookie_val)
 
 
 class PostIndex(Handler):
@@ -140,7 +150,14 @@ class Signup(Handler):
             secure_cookie = make_secure_val(user_id)
             self.response.set_cookie('user_id', secure_cookie)
 
-            self.redirect('/')
+            self.redirect('/welcome')
+
+class Welcome(Handler):
+    def get(self):
+        user_id = int(self.read_secure_cookie('user_id'))
+        user = User.get_by_id(user_id)
+
+        self.render('welcome.html', user=user)
 
 #### SERVER STUFF ####
 routes = [
@@ -148,6 +165,7 @@ routes = [
            ('/newpost', PostNew),
            ('/(\d+)', PostShow),
            ('/signup', Signup),
+           ('/welcome', Welcome),
          ]
 
 app = webapp2.WSGIApplication(routes=routes, debug=True)
