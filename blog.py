@@ -151,6 +151,10 @@ class Signup(Handler):
             params['error_email'] = "That's not a valid email."
             have_error = True
 
+        if User.all().filter("username =", username).get():
+            params['error_duplicate'] = "User already exists"
+            have_error = True
+
         if have_error:
             self.render('signup-form.html', **params)
 
