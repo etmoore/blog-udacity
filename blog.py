@@ -6,6 +6,7 @@ import random
 from string import letters
 import hashlib
 import hmac
+import time
 
 from google.appengine.ext import db
 
@@ -117,9 +118,19 @@ class PostNew(Handler):
 class PostShow(Handler):
     def get(self, post_id):
         post_id = int(post_id)
-        post = Post.get_by_id(post_id)
+        p = Post.get_by_id(post_id)
 
-        self.render('post-show.html', post=post)
+        self.render('post-show.html', post=p)
+
+
+class PostDelete(Handler):
+    def get(self, post_id):
+        post_id = int(post_id)
+        p = Post.get_by_id(post_id)
+        p.delete()
+
+        time.sleep(0.1) # give the db operation time to complete
+        self.redirect('/')
 
 
 class Signup(Handler):
@@ -206,6 +217,7 @@ routes = [
            ('/', PostIndex),
            ('/newpost', PostNew),
            ('/(\d+)', PostShow),
+           ('/(\d+)/delete', PostDelete),
            ('/signup', Signup),
            ('/welcome', Welcome),
            ('/login', Login),
