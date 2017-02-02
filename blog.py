@@ -195,6 +195,12 @@ class Login(Handler):
         if confirm_pw(u, password):
             self.login(u)
 
+
+class Logout(Handler):
+    def get(self):
+        self.response.set_cookie('user_id', '')
+        self.redirect('/signup')
+
 #### SERVER STUFF ####
 routes = [
            ('/', PostIndex),
@@ -203,6 +209,7 @@ routes = [
            ('/signup', Signup),
            ('/welcome', Welcome),
            ('/login', Login),
+           ('/logout', Logout),
          ]
 
 app = webapp2.WSGIApplication(routes=routes, debug=True)
