@@ -163,6 +163,10 @@ class Welcome(Handler):
         else:
             self.redirect('/signup')
 
+class Login(Handler):
+    def get(self):
+        self.render('login-form.html')
+
 #### SERVER STUFF ####
 routes = [
            ('/', PostIndex),
@@ -170,6 +174,7 @@ routes = [
            ('/(\d+)', PostShow),
            ('/signup', Signup),
            ('/welcome', Welcome),
+           ('/login', Login),
          ]
 
 app = webapp2.WSGIApplication(routes=routes, debug=True)
