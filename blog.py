@@ -129,8 +129,25 @@ class PostDelete(Handler):
         p = Post.get_by_id(post_id)
         p.delete()
 
-        time.sleep(0.1) # give the db operation time to complete
+        time.sleep(0.2) # give the db operation time to complete
         self.redirect('/')
+
+
+class PostEdit(Handler):
+    def get(self, post_id):
+        post_id = int(post_id)
+        p = Post.get_by_id(post_id)
+
+        self.render('post-edit.html', post=p)
+
+    def post(self, post_id):
+        p = Post.get_by_id(int(post_id))
+
+        p.subject = self.request.get('subject')
+        p.content = self.request.get('content')
+        p.put()
+
+        self.redirect('/' + post_id)
 
 
 class Signup(Handler):
@@ -218,6 +235,7 @@ routes = [
            ('/newpost', PostNew),
            ('/(\d+)', PostShow),
            ('/(\d+)/delete', PostDelete),
+           ('/(\d+)/edit', PostEdit),
            ('/signup', Signup),
            ('/welcome', Welcome),
            ('/login', Login),
