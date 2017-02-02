@@ -49,6 +49,12 @@ def make_pw_hash(username, password, salt=None):
     h = hashlib.sha256(username + password + salt).hexdigest()
     return '%s,%s' % (salt, h)
 
+def confirm_pw(user, password):
+    username = user.username
+    pw_hash = user.pw_hash
+    salt = pw_hash.split(',')[0]
+    return make_pw_hash(username, password, salt) == pw_hash
+
 secret = "bananabread"
 def make_secure_val(value):
     return '%s|%s' % (value, hmac.new(secret, value).hexdigest())
@@ -71,10 +77,20 @@ class Handler(webapp2.RequestHandler):
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
 
+    def set_secure_cookie(self, name, value):
+        secure_val = make_secure_val(value)
+        self.response.set_cookie(name, secure_val)
+
     def read_secure_cookie(self, cookie_name):
         cookie_val = self.request.cookies.get(cookie_name)
         if cookie_val:
             return check_secure_val(cookie_val)
+
+    def login(self, user):
+        user_id = user.key().id()
+        self.set_secure_cookie('user_id', str(user_id))
+
+        self.redirect('/welcome')
 
 
 class PostIndex(Handler):
@@ -145,12 +161,8 @@ class Signup(Handler):
                      email=email)
             u.put()
 
-            # set cookie
-            user_id = str(u.key().id())
-            secure_cookie = make_secure_val(user_id)
-            self.response.set_cookie('user_id', secure_cookie)
+            self.login(u)
 
-            self.redirect('/welcome')
 
 class Welcome(Handler):
     def get(self):
@@ -166,6 +178,18 @@ class Welcome(Handler):
 class Login(Handler):
     def get(self):
         self.render('login-form.html')
+
+    def post(self):
+        username = self.request.get('username')
+        password = self.request.get('password')
+
+        u = User.all().filter("username =", username).get()
+        if not u:
+            error = 'Invalid Credentials'
+            self.render('login-form.html', error=error, username=username)
+
+        if confirm_pw(u, password):
+            self.login(u)
 
 #### SERVER STUFF ####
 routes = [
