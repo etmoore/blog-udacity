@@ -8,7 +8,7 @@ import hashlib
 import hmac
 import time
 
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 
 # configure jinja2 template engine
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
@@ -16,28 +16,22 @@ jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
 
 #### MODELS ####
-class User(db.Model):
-    username = db.StringProperty(required = True)
-    pw_hash = db.StringProperty(required = True)
-    email = db.StringProperty()
+class User(ndb.Model):
+    username = ndb.StringProperty(required = True)
+    pw_hash = ndb.StringProperty(required = True)
+    email = ndb.StringProperty()
 
 
-class Post(db.Model):
-    subject = db.StringProperty(required=True)
-    content = db.TextProperty(required=True)
-    created = db.DateTimeProperty(auto_now_add=True, required=True)
-    author = db.ReferenceProperty(User,
-                                  required=True,
-                                  collection_name='posts')
+class Post(ndb.Model):
+    subject = ndb.StringProperty(required=True)
+    content = ndb.TextProperty(required=True)
+    created = ndb.DateTimeProperty(auto_now_add=True, required=True)
+    author = ndb.KeyProperty(kind=User)
 
 
-class Like(db.Model):
-    post = db.ReferenceProperty(Post,
-                                required=True,
-                                collection_name='likes')
-    user = db.ReferenceProperty(User,
-                                required=True,
-                                collection_name='likes')
+class Like(ndb.Model):
+    post = ndb.KeyProperty(kind=Post)
+    user = ndb.KeyProperty(kind=User)
 
 
 #### BLOG STUFF ####
@@ -108,14 +102,16 @@ class Handler(webapp2.RequestHandler):
             return check_secure_val(cookie_val)
 
     def login(self, user):
-        user_id = user.key().id()
+        user_id = user.key.id()
         self.set_secure_cookie('user_id', str(user_id))
         self.redirect('/welcome')
 
 class PostIndex(Handler):
     def get(self):
-        posts = Post.all()
-        self.render('post-index.html', posts=posts, user=self.user)
+        posts = Post.query()
+        self.render('post-index.html',
+                    posts=posts,
+                    user=self.user)
 
 
 class PostNew(Handler):
@@ -123,7 +119,7 @@ class PostNew(Handler):
         if not self.user:
             return self.redirect('/login')
 
-        self.render('post-new.html')
+        self.render('post-new.html', user=self.user)
 
     def post(self):
         if not self.user:
@@ -134,10 +130,10 @@ class PostNew(Handler):
 
         p = Post(subject=subject,
                  content=content,
-                 author=self.user)
+                 author=self.user.key)
         p.put()
 
-        permalink = "/%s" % p.key().id()
+        permalink = "/%s" % p.key.id()
         self.redirect(permalink)
 
 
@@ -146,7 +142,9 @@ class PostShow(Handler):
         post_id = int(post_id)
         p = Post.get_by_id(post_id)
 
-        self.render('post-show.html', post=p)
+        self.render('post-show.html',
+                    post=p,
+                    user=self.user)
 
 
 class PostDelete(Handler):
@@ -158,15 +156,18 @@ class PostDelete(Handler):
         post_id = int(post_id)
         p = Post.get_by_id(post_id)
 
-        if self.user.key().id() == p.author.key().id():
+        if self.user.key == p.author:
             p.delete()
 
-            time.sleep(0.2) # give the db operation time to complete
+            time.sleep(0.2) # give the ndb operation time to complete
             self.redirect('/')
 
         else:
             error = "You do not have permission to perform this action."
-            return self.render('post-show.html', error=error, post=p)
+            return self.render('post-show.html',
+                               error=error,
+                               post=p,
+                               user=self.user)
 
 class PostEdit(Handler):
     def get(self, post_id):
@@ -177,7 +178,7 @@ class PostEdit(Handler):
         p = Post.get_by_id(post_id)
 
         # confirm that the user is the post author
-        if self.user.key().id() == p.author.key().id():
+        if self.user.key == p.author:
             self.render('post-edit.html', post=p)
         else:
             error = "You do not have permission to perform this action."
@@ -204,16 +205,16 @@ class LikePost(Handler):
         post_id = int(post_id)
         p = Post.get_by_id(int(post_id))
 
-        if self.user.key().id() == p.author.key().id():
+        if self.user.key == p.author:
             error = "You cannot like your own post."
             return self.render('post-show.html', error=error, post=p)
 
         # check to see if the current user has already liked this post, if so, display error
-        if Like.all().filter("post =", p).filter("user =", self.user).get():
+        if Like.query(Like.post == p.key, Like.user == self.user.key).get():
             error = "You have already liked this post."
             return self.render('post-show.html', error=error, post=p)
 
-        l = Like(post=p, user=self.user)
+        l = Like(post=p.key, user=self.user.key)
         l.put()
 
         self.render('post-show.html', post=p, user=self.user)
@@ -279,7 +280,7 @@ class Login(Handler):
     def post(self):
         username = self.request.get('username')
         password = self.request.get('password')
-        u = User.all().filter("username =", username).get()
+        u = User.query(User.username == username).get()
 
         if confirm_pw(u, password):
             self.login(u)
