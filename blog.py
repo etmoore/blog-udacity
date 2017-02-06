@@ -31,6 +31,15 @@ class Post(db.Model):
                                   collection_name='posts')
 
 
+class Like(db.Model):
+    post = db.ReferenceProperty(Post,
+                                required=True,
+                                collection_name='likes')
+    user = db.ReferenceProperty(User,
+                                required=True,
+                                collection_name='likes')
+
+
 #### BLOG STUFF ####
 
 def valid_username(username):
@@ -106,7 +115,7 @@ class Handler(webapp2.RequestHandler):
 class PostIndex(Handler):
     def get(self):
         posts = Post.all()
-        self.render('post-index.html', posts=posts)
+        self.render('post-index.html', posts=posts, user=self.user)
 
 
 class PostNew(Handler):
@@ -187,6 +196,29 @@ class PostEdit(Handler):
         self.redirect('/' + post_id)
 
 
+class LikePost(Handler):
+    def get(self, post_id):
+        if not self.user:
+            return self.redirect('/login')
+
+        post_id = int(post_id)
+        p = Post.get_by_id(int(post_id))
+
+        if self.user.key().id() == p.author.key().id():
+            error = "You cannot like your own post."
+            return self.render('post-show.html', error=error, post=p)
+
+        # check to see if the current user has already liked this post, if so, display error
+        if Like.all().filter("post =", p).filter("user =", self.user).get():
+            error = "You have already liked this post."
+            return self.render('post-show.html', error=error, post=p)
+
+        l = Like(post=p, user=self.user)
+        l.put()
+
+        self.render('post-show.html', post=p, user=self.user)
+
+
 class Signup(Handler):
     def get(self):
         self.render('signup-form.html')
@@ -261,6 +293,7 @@ class Logout(Handler):
         self.response.set_cookie('user_id', '')
         self.redirect('/signup')
 
+
 #### SERVER STUFF ####
 routes = [
            ('/', PostIndex),
@@ -268,6 +301,7 @@ routes = [
            ('/(\d+)', PostShow),
            ('/(\d+)/delete', PostDelete),
            ('/(\d+)/edit', PostEdit),
+           ('/(\d+)/like', LikePost),
            ('/signup', Signup),
            ('/welcome', Welcome),
            ('/login', Login),

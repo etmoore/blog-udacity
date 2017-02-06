@@ -4,6 +4,11 @@
   <title>Multi-User Blog</title>
 </head>
 <body>
+  <header>
+    {% if user %}
+      <p style="color:blue">{{user.username}}</p>
+    {% endif %}
+  </header>
 
   {% block content %}
   {% endblock %}

@@ -10,9 +10,13 @@
   <div class="post">
     <h2 class="post-subject">{{post.subject}}</h2>
     <p class="post-body">{{post.content}}</p>
+    {% if post.likes %}
+      <p>likes: {{post.like_count}}</p>
+    {% endif %}
   </div>
 
   <a href="/{{post.key().id()}}/edit">Edit</a>
   <a href="/{{post.key().id()}}/delete">Delete</a>
+  <a href="/{{post.key().id()}}/like">Like</a>
 
 {% endblock %}
