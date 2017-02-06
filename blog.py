@@ -51,6 +51,8 @@ def make_pw_hash(username, password, salt=None):
     return '%s,%s' % (salt, h)
 
 def confirm_pw(user, password):
+    if not user:
+        return False
     username = user.username
     pw_hash = user.pw_hash
     salt = pw_hash.split(',')[0]
@@ -234,14 +236,13 @@ class Login(Handler):
     def post(self):
         username = self.request.get('username')
         password = self.request.get('password')
-
         u = User.all().filter("username =", username).get()
-        if not u:
-            error = 'Invalid Credentials'
-            self.render('login-form.html', error=error, username=username)
 
         if confirm_pw(u, password):
             self.login(u)
+        else:
+            error = 'Invalid Credentials'
+            self.render('login-form.html', error=error, username=username)
 
 
 class Logout(Handler):
