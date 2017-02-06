@@ -16,16 +16,19 @@ jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
 
 #### MODELS ####
-class Post(db.Model):
-    subject = db.StringProperty(required = True)
-    content = db.TextProperty(required = True)
-    created = db.DateTimeProperty(auto_now_add = True, required = True)
-
-
 class User(db.Model):
     username = db.StringProperty(required = True)
     pw_hash = db.StringProperty(required = True)
     email = db.StringProperty()
+
+
+class Post(db.Model):
+    subject = db.StringProperty(required=True)
+    content = db.TextProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True, required=True)
+    author = db.ReferenceProperty(User,
+                                  required=True,
+                                  collection_name='posts')
 
 
 #### BLOG STUFF ####
@@ -120,7 +123,9 @@ class PostNew(Handler):
         subject = self.request.get('subject')
         content = self.request.get('content')
 
-        p = Post(subject=subject, content=content)
+        p = Post(subject=subject,
+                 content=content,
+                 author=self.user)
         p.put()
 
         permalink = "/%s" % p.key().id()
@@ -143,11 +148,16 @@ class PostDelete(Handler):
 
         post_id = int(post_id)
         p = Post.get_by_id(post_id)
-        p.delete()
 
-        time.sleep(0.2) # give the db operation time to complete
-        self.redirect('/')
+        if self.user.key().id() == p.author.key().id():
+            p.delete()
 
+            time.sleep(0.2) # give the db operation time to complete
+            self.redirect('/')
+
+        else:
+            error = "You do not have permission to perform this action."
+            return self.render('post-show.html', error=error, post=p)
 
 class PostEdit(Handler):
     def get(self, post_id):
@@ -157,7 +167,12 @@ class PostEdit(Handler):
         post_id = int(post_id)
         p = Post.get_by_id(post_id)
 
-        self.render('post-edit.html', post=p)
+        # confirm that the user is the post author
+        if self.user.key().id() == p.author.key().id():
+            self.render('post-edit.html', post=p)
+        else:
+            error = "You do not have permission to perform this action."
+            return self.render('post-show.html', error=error, post=p)
 
     def post(self, post_id):
         if not self.user:
