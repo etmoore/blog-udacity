@@ -78,6 +78,12 @@ class Handler(webapp2.RequestHandler):
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
 
+    def initialize(self, *a, **kw):
+        '''Get the logged in user'''
+        webapp2.RequestHandler.initialize(self, *a, **kw)
+        user_id = self.read_secure_cookie('user_id')
+        self.user = user_id and User.get_by_id(int(user_id))
+
     def set_secure_cookie(self, name, value):
         secure_val = make_secure_val(value)
         self.response.set_cookie(name, secure_val)
@@ -90,9 +96,7 @@ class Handler(webapp2.RequestHandler):
     def login(self, user):
         user_id = user.key().id()
         self.set_secure_cookie('user_id', str(user_id))
-
         self.redirect('/welcome')
-
 
 class PostIndex(Handler):
     def get(self):
@@ -102,9 +106,15 @@ class PostIndex(Handler):
 
 class PostNew(Handler):
     def get(self):
+        if not self.user:
+            return self.redirect('/login')
+
         self.render('post-new.html')
 
     def post(self):
+        if not self.user:
+            return self.redirect('/login')
+
         subject = self.request.get('subject')
         content = self.request.get('content')
 
@@ -125,6 +135,10 @@ class PostShow(Handler):
 
 class PostDelete(Handler):
     def get(self, post_id):
+
+        if not self.user:
+            return self.redirect('/login')
+
         post_id = int(post_id)
         p = Post.get_by_id(post_id)
         p.delete()
@@ -135,12 +149,18 @@ class PostDelete(Handler):
 
 class PostEdit(Handler):
     def get(self, post_id):
+        if not self.user:
+            return self.redirect('/login')
+
         post_id = int(post_id)
         p = Post.get_by_id(post_id)
 
         self.render('post-edit.html', post=p)
 
     def post(self, post_id):
+        if not self.user:
+            return self.redirect('/login')
+
         p = Post.get_by_id(int(post_id))
 
         p.subject = self.request.get('subject')
