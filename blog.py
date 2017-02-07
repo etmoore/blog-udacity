@@ -28,6 +28,8 @@ class Post(ndb.Model):
     created = ndb.DateTimeProperty(auto_now_add=True, required=True)
     author = ndb.KeyProperty(kind=User)
 
+    @property
+
 
 class Like(ndb.Model):
     post = ndb.KeyProperty(kind=Post)
@@ -141,6 +143,8 @@ class PostShow(Handler):
     def get(self, post_id):
         post_id = int(post_id)
         p = Post.get_by_id(post_id)
+
+        p.like_count = Like.query(Like.post == p.key).count()
 
         self.render('post-show.html',
                     post=p,
