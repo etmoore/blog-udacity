@@ -28,8 +28,6 @@ class Post(ndb.Model):
     created = ndb.DateTimeProperty(auto_now_add=True, required=True)
     author = ndb.KeyProperty(kind=User)
 
-    @property
-
 
 class Like(ndb.Model):
     post = ndb.KeyProperty(kind=Post)
@@ -208,15 +206,23 @@ class LikePost(Handler):
 
         post_id = int(post_id)
         p = Post.get_by_id(int(post_id))
+        p.like_count = Like.query(Like.post == p.key).count()
 
         if self.user.key == p.author:
             error = "You cannot like your own post."
-            return self.render('post-show.html', error=error, post=p)
+            return self.render('post-show.html',
+                               error=error,
+                               post=p,
+                               user = self.user)
 
         # check to see if the current user has already liked this post, if so, display error
         if Like.query(Like.post == p.key, Like.user == self.user.key).get():
             error = "You have already liked this post."
-            return self.render('post-show.html', error=error, post=p)
+            return self.render('post-show.html',
+                               error=error,
+                               post=p,
+                               user = self.user)
+
 
         l = Like(post=p.key, user=self.user.key)
         l.put()
