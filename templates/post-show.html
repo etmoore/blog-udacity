@@ -13,10 +13,27 @@
     {% if post.like_count %}
       <p>likes: {{post.like_count}}</p>
     {% endif %}
-  </div>
 
-  <a href="/{{post.key.id()}}/edit">Edit</a>
-  <a href="/{{post.key.id()}}/delete">Delete</a>
-  <a href="/{{post.key.id()}}/like">Like</a>
+    <a href="/{{post.key.id()}}/edit">Edit</a>
+    <a href="/{{post.key.id()}}/delete">Delete</a>
+    <a href="/{{post.key.id()}}/like">Like</a>
+
+    <hr>
+
+    <form method="post" action="/{{post.key.id()}}/comment" class="comment-form">
+      <div class="comment-content">
+        <label for="content">Comment</label>
+        <textarea name="content"></textarea>
+      </div>
+      <input type="submit">
+    </form>
+
+    {% for comment in post.comments %}
+      <div class="comment">
+        <p class="comment-content">{{comment.content}}</p>
+        <p class="comment-author-date">Author: {{comment.author}} | Created: {{comment.created.strftime('%m-%d-%Y %-I:%M:%S %p')}}</p>
+      </div>
+    {% endfor %}
+  </div>
 
 {% endblock %}

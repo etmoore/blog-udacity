@@ -25,13 +25,22 @@ class User(ndb.Model):
 class Post(ndb.Model):
     subject = ndb.StringProperty(required=True)
     content = ndb.TextProperty(required=True)
+    author = ndb.StringProperty(required=True)
     created = ndb.DateTimeProperty(auto_now_add=True, required=True)
-    author = ndb.KeyProperty(kind=User)
+    user_key = ndb.KeyProperty(kind=User, required=True)
 
 
 class Like(ndb.Model):
-    post = ndb.KeyProperty(kind=Post)
-    user = ndb.KeyProperty(kind=User)
+    post_key = ndb.KeyProperty(kind=Post, required=True)
+    user_key = ndb.KeyProperty(kind=User, required=True)
+
+
+class Comment(ndb.Model):
+    content = ndb.TextProperty(required=True)
+    author = ndb.StringProperty(required=True)
+    created = ndb.DateTimeProperty(auto_now_add=True, required=True)
+    post_key = ndb.KeyProperty(kind=Post, required=True)
+    user_key = ndb.KeyProperty(kind=User, required=True)
 
 
 #### BLOG STUFF ####
@@ -130,7 +139,8 @@ class PostNew(Handler):
 
         p = Post(subject=subject,
                  content=content,
-                 author=self.user.key)
+                 author=self.user.username,
+                 user_key=self.user.key)
         p.put()
 
         permalink = "/%s" % p.key.id()
@@ -139,10 +149,11 @@ class PostNew(Handler):
 
 class PostShow(Handler):
     def get(self, post_id):
-        post_id = int(post_id)
-        p = Post.get_by_id(post_id)
+        p = Post.get_by_id(int(post_id))
 
-        p.like_count = Like.query(Like.post == p.key).count()
+        p.like_count = Like.query(Like.post_key==p.key).count()
+        p.comments = Comment.query(Comment.post_key==p.key) \
+                            .order(Comment.created).fetch()
 
         self.render('post-show.html',
                     post=p,
@@ -176,8 +187,7 @@ class PostEdit(Handler):
         if not self.user:
             return self.redirect('/login')
 
-        post_id = int(post_id)
-        p = Post.get_by_id(post_id)
+        p = Post.get_by_id(int(post_id))
 
         # confirm that the user is the post author
         if self.user.key == p.author:
@@ -199,24 +209,23 @@ class PostEdit(Handler):
         self.redirect('/' + post_id)
 
 
-class LikePost(Handler):
+class PostLike(Handler):
     def get(self, post_id):
         if not self.user:
             return self.redirect('/login')
 
-        post_id = int(post_id)
         p = Post.get_by_id(int(post_id))
-        p.like_count = Like.query(Like.post == p.key).count()
+        p.like_count = Like.query(Like.post_key == p.key).count()
 
-        if self.user.key == p.author:
+        if self.user.key == p.user_key:
             error = "You cannot like your own post."
             return self.render('post-show.html',
                                error=error,
                                post=p,
                                user = self.user)
 
-        # check to see if the current user has already liked this post, if so, display error
-        if Like.query(Like.post == p.key, Like.user == self.user.key).get():
+        # if the current user has already liked this post, display error
+        if Like.query(Like.post_key==p.key, Like.user_key==self.user.key).get():
             error = "You have already liked this post."
             return self.render('post-show.html',
                                error=error,
@@ -224,10 +233,28 @@ class LikePost(Handler):
                                user = self.user)
 
 
-        l = Like(post=p.key, user=self.user.key)
+        l = Like(post_key=p.key, user_key=self.user.key)
         l.put()
 
-        self.render('post-show.html', post=p, user=self.user)
+        time.sleep(0.2) # give the ndb operation time to complete
+        self.redirect('/' + post_id)
+
+
+class PostComment(Handler):
+    def post(self, post_id):
+        # grab the content, user, etc. related to the comment
+        content = self.request.get('content')
+        post = Post.get_by_id(int(post_id))
+
+        # create the comment
+        c = Comment(user_key=self.user.key,
+                    content=content,
+                    author=self.user.username,
+                    post_key=post.key)
+        c.put()
+
+        time.sleep(0.2) # give the ndb operation time to complete
+        return self.redirect('/' + post_id)
 
 
 class Signup(Handler):
@@ -283,6 +310,7 @@ class Welcome(Handler):
         else:
             self.redirect('/signup')
 
+
 class Login(Handler):
     def get(self):
         self.render('login-form.html')
@@ -312,7 +340,8 @@ routes = [
            ('/(\d+)', PostShow),
            ('/(\d+)/delete', PostDelete),
            ('/(\d+)/edit', PostEdit),
-           ('/(\d+)/like', LikePost),
+           ('/(\d+)/like', PostLike),
+           ('/(\d+)/comment', PostComment),
            ('/signup', Signup),
            ('/welcome', Welcome),
            ('/login', Login),
