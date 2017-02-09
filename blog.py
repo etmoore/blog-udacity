@@ -194,7 +194,10 @@ class PostEdit(Handler):
             self.render('post-edit.html', post=p)
         else:
             error = "You do not have permission to perform this action."
-            return self.render('post-show.html', error=error, post=p)
+            return self.render('post-show.html',
+                               error=error,
+                               user=self.user,
+                               post=p)
 
     def post(self, post_id):
         if not self.user:
