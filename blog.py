@@ -333,7 +333,7 @@ class Login(Handler):
 class Logout(Handler):
     def get(self):
         self.response.set_cookie('user_id', '')
-        self.redirect('/signup')
+        self.redirect('/login')
 
 
 #### SERVER STUFF ####
