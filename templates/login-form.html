@@ -4,22 +4,32 @@
 <h1>Login</h1>
 
 <p style="color:red">{{error}}</p>
-<form method="post">
+<form method="post" class="form-horizontal" action="#">
 
-  <div class="username">
-    <label for="username">username:</label>
-    <input type="text" id="username" name="username" value="{{username}}">
+  <div class="username form-group">
+    <label for="username" class="col-sm-2 control-label">username:</label>
+    <div class="col-sm-3">
+      <input type="text" class="form-control" id="username" name="username" value="{{username}}">
+    </div>
   </div>
 
-  <div class="password">
-    <label for="password">password:</label>
-    <input type="text" id="password" name="password" value="{{password}}">
+  <div class="password form-group">
+    <label for="password" class="col-sm-2 control-label">password:</label>
+    <div class="col-sm-3">
+      <input type="text" class="form-control" id="password" name="password" value="{{password}}">
+    </div>
   </div>
 
-  <button type="submit">Submit</button>
+  <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-3">
+      <button type="submit" class="btn btn-default">Submit</button>
+    </div>
+  </div>
 
 </form>
 
-<p>Need an account? <a href="/signup">Sign Up</a></p>
+<div class="col-sm-offset-2 col-sm-3">
+  <p>Need an account? <a href="/signup">Sign Up</a></p>
+</div>
 
 {% endblock %}
