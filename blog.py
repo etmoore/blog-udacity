@@ -190,7 +190,7 @@ class PostEdit(Handler):
         p = Post.get_by_id(int(post_id))
 
         # confirm that the user is the post author
-        if self.user.key == p.author:
+        if self.user.username == p.author:
             self.render('post-edit.html', post=p)
         else:
             error = "You do not have permission to perform this action."
