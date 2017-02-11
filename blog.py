@@ -194,6 +194,9 @@ class PostEdit(Handler):
             self.render('post-edit.html', post=p)
         else:
             error = "You do not have permission to perform this action."
+            p.comments = Comment.query(Comment.post_key==p.key) \
+                                .order(Comment.created).fetch()
+
             return self.render('post-show.html',
                                error=error,
                                user=self.user,
@@ -219,9 +222,12 @@ class PostLike(Handler):
 
         p = Post.get_by_id(int(post_id))
         p.like_count = Like.query(Like.post_key == p.key).count()
+        p.comments = Comment.query(Comment.post_key==p.key) \
+                            .order(Comment.created).fetch()
 
         if self.user.key == p.user_key:
             error = "You cannot like your own post."
+
             return self.render('post-show.html',
                                error=error,
                                post=p,
