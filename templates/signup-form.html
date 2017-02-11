@@ -3,34 +3,46 @@
 
 <h1>Signup</h1>
 
-<form method="post">
+<form method="post" action="#" class="form-horizontal">
 
-  <div class="username">
-    <label for="username">username:</label>
-    <input type="text" id="username" name="username" value="{{username}}">
+  <div class="username form-group">
+    <label for="username" class="col-sm-2 control-label">username:</label>
+    <div class="col-sm-3">
+      <input type="text" class="form-control" id="username" name="username" value="{{username}}">
+    </div>
     <span style="color:red">{{error_username}}</span>
     <span style="color:red">{{error_duplicate}}</span>
   </div>
 
-  <div class="password">
-    <label for="password">password:</label>
-    <input type="text" id="password" name="password" value="{{password}}">
+  <div class="password form-group">
+    <label for="password" class="col-sm-2 control-label">password:</label>
+    <div class="col-sm-3">
+      <input type="password" class="form-control" id="password" name="password" value="{{password}}">
+    </div>
     <span style="color:red">{{error_password}}</span>
   </div>
 
-  <div class="verify">
-    <label for="verify">verify:</label>
-    <input type="text" id="verify" name="verify" value="{{verify}}">
+  <div class="verify form-group">
+    <label for="verify" class="col-sm-2 control-label">verify:</label>
+    <div class="col-sm-3">
+      <input type="text" class="form-control" id="verify" name="verify" value="{{verify}}">
+    </div>
     <span style="color:red">{{error_verify}}</span>
   </div>
 
-  <div class="email">
-    <label for="email">email:</label>
-    <input type="text" id="email" name="email" value="{{email}}">
+  <div class="email form-group">
+    <label for="email" class="col-sm-2 control-label">email:</label>
+    <div class="col-sm-3">
+      <input type="text" class="form-control" id="email" name="email" value="{{email}}">
+    </div>
     <span style="color:red">{{error_email}}</span>
   </div>
 
-  <button type="submit">Submit</button>
+  <div class="email form-group">
+    <div class="col-sm-offset-2 col-sm-3">
+      <button type="submit" class="btn btn-default">Submit</button>
+    </div>
+  </div>
 
 </form>
 
