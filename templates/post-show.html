@@ -10,6 +10,8 @@
   <div class="post">
     <h2 class="post-subject">{{post.subject}}</h2>
     <p class="post-body">{{post.content}}</p>
+    <p class="post-date">Created: {{post.created.strftime('%m/%d/%Y %-I:%M %p')}}</p>
+
     {% if post.like_count %}
       <p>likes: {{post.like_count}}</p>
     {% endif %}
@@ -22,13 +24,13 @@
 
     <form method="post" action="/{{post.key.id()}}/comment" class="comment-form form-horizontal">
       <div class="comment-content form-group">
-        <label for="content" class="col-sm-1 control-label">Comment</label>
-        <div class="col-sm-11">
+        <label for="content" class="col-md-1 control-label">Comment</label>
+        <div class="col-md-11">
           <textarea name="content" class="form-control" rows="2"></textarea>
         </div>
       </div>
       <div class="form-group ">
-        <div class="col-sm-offset-1 col-sm-10">
+        <div class="col-md-offset-1 col-md-10">
           <button type="submit" class="btn btn-default">Submit</button>
         </div>
       </div>
@@ -42,7 +44,7 @@
             {{comment.content}}
           </div>
           <div class="panel-footer">
-            Author: {{comment.author}} | Created: {{comment.created.strftime('%m-%d-%Y %-I:%M:%S %p')}}
+            Author: {{comment.author}} | Created: {{comment.created.strftime('%m/%d/%Y %-I:%M %p')}}
           </div>
         </div>
       {% endfor %}
