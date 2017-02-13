@@ -251,6 +251,8 @@ class PostLike(Handler):
 
 class PostComment(Handler):
     def post(self, post_id):
+        if not self.user:
+            return self.redirect('/login')
         # grab the content, user, etc. related to the comment
         content = self.request.get('content')
         post = Post.get_by_id(int(post_id))
