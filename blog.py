@@ -177,6 +177,8 @@ class PostDelete(Handler):
 
         else:
             error = "You do not have permission to perform this action."
+            p.comments = Comment.query(Comment.post_key==p.key) \
+                                .order(Comment.created).fetch()
             return self.render('post-show.html',
                                error=error,
                                post=p,
