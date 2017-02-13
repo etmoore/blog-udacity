@@ -17,8 +17,8 @@ jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
 
 #### MODELS ####
 class User(ndb.Model):
-    username = ndb.StringProperty(required = True)
-    pw_hash = ndb.StringProperty(required = True)
+    username = ndb.StringProperty(required=True)
+    pw_hash = ndb.StringProperty(required=True)
     email = ndb.StringProperty()
 
 
@@ -46,26 +46,32 @@ class Comment(ndb.Model):
 #### BLOG STUFF ####
 
 def valid_username(username):
+    """Confirm username is valid."""
     USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
     return USER_RE.match(username)
 
 def valid_password(password):
+    """Confirm password is valid."""
     PASSWORD_RE = re.compile(r"^.{3,20}$")
     return PASSWORD_RE.match(password)
 
 def valid_email(email):
+    """Confirm email is valid or not present."""
     EMAIL_RE = re.compile(r"^[\S]+@[\S]+.[\S]+$")
     return not email or EMAIL_RE.match(email)
 
 def make_salt(length=5):
+    """Create a random salt."""
     return ''.join(random.choice(letters) for x in range(length))
 
 def make_pw_hash(username, password, salt=None):
+    """Hash password."""
     salt = salt or make_salt()
     h = hashlib.sha256(username + password + salt).hexdigest()
     return '%s,%s' % (salt, h)
 
 def confirm_pw(user, password):
+    """Verify a password for a given user."""
     if not user:
         return False
     username = user.username
@@ -75,9 +81,11 @@ def confirm_pw(user, password):
 
 secret = "bananabread"
 def make_secure_val(value):
+    """Create a secure value"""
     return '%s|%s' % (value, hmac.new(secret, value).hexdigest())
 
 def check_secure_val(secure_value):
+    """Confirm the cookie value matches its hash, if so, return the value."""
     value = secure_value.split('|')[0]
     if secure_value == make_secure_val(value):
         return value
@@ -86,37 +94,44 @@ def check_secure_val(secure_value):
 class Handler(webapp2.RequestHandler):
 
     def write(self, *a, **kw):
+        """Write to self.response."""
         self.response.out.write(*a, **kw)
 
     def render_str(self, template, **params):
+        """Generate template string."""
         t = jinja_env.get_template(template)
         return t.render(params)
 
     def render(self, template, **kw):
+        """Render template given filename."""
         self.write(self.render_str(template, **kw))
 
     def initialize(self, *a, **kw):
-        '''Get the logged in user'''
+        """Assign the logged in user to self.user."""
         webapp2.RequestHandler.initialize(self, *a, **kw)
         user_id = self.read_secure_cookie('user_id')
         self.user = user_id and User.get_by_id(int(user_id))
 
     def set_secure_cookie(self, name, value):
+        """Set a secure cookie given a name and value."""
         secure_val = make_secure_val(value)
         self.response.set_cookie(name, secure_val)
 
     def read_secure_cookie(self, cookie_name):
+        """Decrypt secure cookie and return its value."""
         cookie_val = self.request.cookies.get(cookie_name)
         if cookie_val:
             return check_secure_val(cookie_val)
 
     def login(self, user):
+        """Set a secure cookie with the user's id."""
         user_id = user.key.id()
         self.set_secure_cookie('user_id', str(user_id))
         self.redirect('/welcome')
 
 class PostIndex(Handler):
     def get(self):
+        """Display the post index page."""
         posts = Post.query()
         self.render('post-index.html',
                     posts=posts,
@@ -125,12 +140,14 @@ class PostIndex(Handler):
 
 class PostNew(Handler):
     def get(self):
+        """Display the new post form."""
         if not self.user:
             return self.redirect('/login')
 
         self.render('post-new.html', user=self.user)
 
     def post(self):
+        """Save the new post."""
         if not self.user:
             return self.redirect('/login')
 
@@ -149,6 +166,7 @@ class PostNew(Handler):
 
 class PostShow(Handler):
     def get(self, post_id):
+        """Display the post show page."""
         p = Post.get_by_id(int(post_id))
 
         p.like_count = Like.query(Like.post_key==p.key).count()
@@ -162,6 +180,7 @@ class PostShow(Handler):
 
 class PostDelete(Handler):
     def get(self, post_id):
+        """Check permissions and delete post."""
 
         if not self.user:
             return self.redirect('/login')
@@ -171,7 +190,6 @@ class PostDelete(Handler):
 
         if self.user.key == p.author:
             p.delete()
-
             time.sleep(0.2) # give the ndb operation time to complete
             self.redirect('/')
 
@@ -184,8 +202,10 @@ class PostDelete(Handler):
                                post=p,
                                user=self.user)
 
+
 class PostEdit(Handler):
     def get(self, post_id):
+        """Check permissions and display post edit form."""
         if not self.user:
             return self.redirect('/login')
 
@@ -205,6 +225,7 @@ class PostEdit(Handler):
                                post=p)
 
     def post(self, post_id):
+        """Save the edited post."""
         if not self.user:
             return self.redirect('/login')
 
@@ -219,6 +240,7 @@ class PostEdit(Handler):
 
 class PostLike(Handler):
     def get(self, post_id):
+        """Create like."""
         if not self.user:
             return self.redirect('/login')
 
@@ -243,7 +265,6 @@ class PostLike(Handler):
                                post=p,
                                user = self.user)
 
-
         l = Like(post_key=p.key, user_key=self.user.key)
         l.put()
 
@@ -253,6 +274,7 @@ class PostLike(Handler):
 
 class PostComment(Handler):
     def post(self, post_id):
+        """Create a comment if the user is logged in."""
         if not self.user:
             return self.redirect('/login')
         # grab the content, user, etc. related to the comment
@@ -265,16 +287,17 @@ class PostComment(Handler):
                     author=self.user.username,
                     post_key=post.key)
         c.put()
-
         time.sleep(0.2) # give the ndb operation time to complete
         return self.redirect('/' + post_id)
 
 
 class Signup(Handler):
     def get(self):
+        """Display the signup form."""
         self.render('signup-form.html')
 
     def post(self):
+        """Create the user if info is valid, then log them in."""
         have_error = False
         username = self.request.get('username')
         password = self.request.get('password')
@@ -317,6 +340,7 @@ class Signup(Handler):
 
 
 class Welcome(Handler):
+    """Display the welcome page."""
     def get(self):
         if self.user:
             self.render('welcome.html', user=self.user)
@@ -326,9 +350,11 @@ class Welcome(Handler):
 
 class Login(Handler):
     def get(self):
+        """Display the login form"""
         self.render('login-form.html')
 
     def post(self):
+        """Login the user, setting a secure cookie 'user_id'."""
         username = self.request.get('username')
         password = self.request.get('password')
         u = User.query(User.username == username).get()
@@ -342,6 +368,7 @@ class Login(Handler):
 
 class Logout(Handler):
     def get(self):
+        """Logout the user, erasing the user_id cookie"""
         self.response.set_cookie('user_id', '')
         self.redirect('/login')
 
