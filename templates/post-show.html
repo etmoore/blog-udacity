@@ -37,9 +37,13 @@
     {% if post.comments %}
       <h2>Comments</h2>
       {% for comment in post.comments %}
-        <div class="comment">
-          <p class="comment-content">{{comment.content}}</p>
-          <p class="comment-author-date">Author: {{comment.author}} | Created: {{comment.created.strftime('%m-%d-%Y %-I:%M:%S %p')}}</p>
+        <div class="comment panel panel-default">
+          <div class="panel-body">
+            {{comment.content}}
+          </div>
+          <div class="panel-footer">
+            Author: {{comment.author}} | Created: {{comment.created.strftime('%m-%d-%Y %-I:%M:%S %p')}}
+          </div>
         </div>
       {% endfor %}
     {% endif %}
