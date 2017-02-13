@@ -1,8 +1,8 @@
 {% extends "main.html" %}
 {% block content %}
 
-  <a href="/newpost">New Post</a>
-  <a href="/">Post Index</a>
+  <a href="/newpost" class="btn btn-default"><span class="glyphicon glyphicon-pencil"></span> New Post</a>
+  <a href="/" class="btn btn-default">Post Index</a>
 
   <hr>
 
@@ -14,9 +14,9 @@
       <p>likes: {{post.like_count}}</p>
     {% endif %}
 
-    <a href="/{{post.key.id()}}/edit">Edit</a>
-    <a href="/{{post.key.id()}}/delete">Delete</a>
-    <a href="/{{post.key.id()}}/like">Like</a>
+    <a href="/{{post.key.id()}}/edit" class="btn btn-sm btn-default">Edit</a>
+    <a href="/{{post.key.id()}}/delete" class="btn btn-sm btn-danger">Delete</a>
+    <a href="/{{post.key.id()}}/like" class="btn btn-sm btn-info"><span class="glyphicon glyphicon-thumbs-up"></span> Like</a>
 
     <hr>
 
