@@ -10,37 +10,14 @@ import time
 
 from google.appengine.ext import ndb
 
+from models import User, Post, Like, Comment
+
 # configure jinja2 template engine
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
 
 #### MODELS ####
-class User(ndb.Model):
-    username = ndb.StringProperty(required=True)
-    pw_hash = ndb.StringProperty(required=True)
-    email = ndb.StringProperty()
-
-
-class Post(ndb.Model):
-    subject = ndb.StringProperty(required=True)
-    content = ndb.TextProperty(required=True)
-    author = ndb.StringProperty(required=True)
-    created = ndb.DateTimeProperty(auto_now_add=True, required=True)
-    user_key = ndb.KeyProperty(kind=User, required=True)
-
-
-class Like(ndb.Model):
-    post_key = ndb.KeyProperty(kind=Post, required=True)
-    user_key = ndb.KeyProperty(kind=User, required=True)
-
-
-class Comment(ndb.Model):
-    content = ndb.TextProperty(required=True)
-    author = ndb.StringProperty(required=True)
-    created = ndb.DateTimeProperty(auto_now_add=True, required=True)
-    post_key = ndb.KeyProperty(kind=Post, required=True)
-    user_key = ndb.KeyProperty(kind=User, required=True)
 
 
 #### BLOG STUFF ####
