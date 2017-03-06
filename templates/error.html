@@ -1,0 +1,13 @@
+{% extends "main.html" %}
+{% block content %}
+
+  {% if status == 404 %}
+    <h1>404</h1>
+    <h2>Resource not found</h2>
+    <a href="/">Return to Safety</a>
+  {% else %}
+    <h2>Something went wrong.</h2>
+    <a href="/">Return to Safety</a>
+  {% endif %}
+
+{% endblock %}

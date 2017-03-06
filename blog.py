@@ -7,6 +7,7 @@ from string import letters
 import hashlib
 import hmac
 import time
+from functools import wraps
 
 from google.appengine.ext import ndb
 
@@ -106,6 +107,9 @@ class Handler(webapp2.RequestHandler):
         self.set_secure_cookie('user_id', str(user_id))
         self.redirect('/welcome')
 
+    def error(self, status):
+        self.render('error.html', status=status)
+
 class PostIndex(Handler):
     def get(self):
         """Display the post index page."""
@@ -140,18 +144,26 @@ class PostNew(Handler):
         permalink = "/%s" % p.key.id()
         self.redirect(permalink)
 
+def check_if_valid_post(f):
+    @wraps(f)
+    def wrapper(self, post_id):
+        post = Post.get_by_id(int(post_id))
+        if post:
+            return f(self, post_id, post)
+        else:
+            return self.error(404)
+    return wrapper
 
 class PostShow(Handler):
-    def get(self, post_id):
+    @check_if_valid_post
+    def get(self, post_id, post):
         """Display the post show page."""
-        p = Post.get_by_id(int(post_id))
-
-        p.like_count = Like.query(Like.post_key==p.key).count()
-        p.comments = Comment.query(Comment.post_key==p.key) \
+        post.like_count = Like.query(Like.post_key==post.key).count()
+        post.comments = Comment.query(Comment.post_key==post.key) \
                             .order(Comment.created).fetch()
 
         self.render('post-show.html',
-                    post=p,
+                    post=post,
                     user=self.user)
 
 
