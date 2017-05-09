@@ -183,8 +183,8 @@ class PostDelete(Handler):
 
         post = Post.get_by_id(int(post_id))
 
-        if self.user.key == p.author:
-            p.delete()
+        if self.user.username == post.author:
+            post.key.delete()
             time.sleep(0.2) # give the ndb operation time to complete
             self.redirect('/')
 
