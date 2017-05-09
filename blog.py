@@ -145,19 +145,21 @@ class PostNew(Handler):
         self.redirect(permalink)
 
 def check_if_valid_post(f): # TODO: break this out into a helper function file
+    """Return 404 if post does not exist"""
     @wraps(f)
     def wrapper(self, post_id):
         post = Post.get_by_id(int(post_id))
         if post:
-            return f(self, post_id, post)
+            return f(self, post_id)
         else:
             return self.error(404)
     return wrapper
 
 class PostShow(Handler):
     @check_if_valid_post
-    def get(self, post_id, post):
+    def get(self, post_id):
         """Display the post show page."""
+        post = Post.get_by_id(int(post_id))
         post.like_count = Like.query(Like.post_key==post.key).count()
         post.comments = Comment.query(Comment.post_key==post.key) \
                             .order(Comment.created).fetch()
@@ -176,12 +178,10 @@ class PostDelete(Handler):
     @check_if_valid_post
     def get(self, post_id):
         """Check permissions and delete post."""
-
         if not self.user:
             return self.redirect('/login')
 
-        post_id = int(post_id)
-        p = Post.get_by_id(post_id)
+        post = Post.get_by_id(int(post_id))
 
         if self.user.key == p.author:
             p.delete()
@@ -190,11 +190,11 @@ class PostDelete(Handler):
 
         else:
             error = "You do not have permission to perform this action."
-            p.comments = Comment.query(Comment.post_key==p.key) \
-                                .order(Comment.created).fetch()
+            post.comments = Comment.query(Comment.post_key==post.key) \
+                    .order(Comment.created).fetch()
             return self.render('post-show.html',
                                error=error,
-                               post=p,
+                               post=post,
                                user=self.user)
 
 
@@ -213,7 +213,7 @@ class PostEdit(Handler):
         else:
             error = "You do not have permission to perform this action."
             p.comments = Comment.query(Comment.post_key==p.key) \
-                                .order(Comment.created).fetch()
+                    .order(Comment.created).fetch()
 
             return self.render('post-show.html',
                                error=error,
@@ -243,7 +243,7 @@ class PostLike(Handler):
         p = Post.get_by_id(int(post_id))
         p.like_count = Like.query(Like.post_key == p.key).count()
         p.comments = Comment.query(Comment.post_key==p.key) \
-                            .order(Comment.created).fetch()
+                .order(Comment.created).fetch()
 
         if self.user.key == p.user_key:
             error = "You cannot like your own post."
@@ -371,17 +371,17 @@ class Logout(Handler):
 
 #### SERVER STUFF ####
 routes = [
-           ('/', PostIndex),
-           ('/newpost', PostNew),
-           ('/(\d+)', PostShow),
-           ('/(\d+)/delete', PostDelete),
-           ('/(\d+)/edit', PostEdit),
-           ('/(\d+)/like', PostLike),
-           ('/(\d+)/comment', PostComment),
-           ('/signup', Signup),
-           ('/welcome', Welcome),
-           ('/login', Login),
-           ('/logout', Logout),
-         ]
+    ('/', PostIndex),
+    ('/newpost', PostNew),
+    ('/(\d+)', PostShow),
+    ('/(\d+)/delete', PostDelete),
+    ('/(\d+)/edit', PostEdit),
+    ('/(\d+)/like', PostLike),
+    ('/(\d+)/comment', PostComment),
+    ('/signup', Signup),
+    ('/welcome', Welcome),
+    ('/login', Login),
+    ('/logout', Logout),
+]
 
 app = webapp2.WSGIApplication(routes=routes, debug=True)
