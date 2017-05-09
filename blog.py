@@ -11,7 +11,7 @@ import time
 from google.appengine.ext import ndb
 
 from models import User, Post, Like, Comment
-from helpers import confirm_logged_in, confirm_valid_post
+from wrappers import confirm_logged_in, confirm_valid_post
 
 # configure jinja2 template engine
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
