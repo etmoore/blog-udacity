@@ -167,6 +167,11 @@ class PostShow(Handler):
                     user=self.user)
 
 
+# def confirmUserLoggedIn(f):
+#     @wraps(f)
+#     def wrapper(self):
+
+
 class PostDelete(Handler):
     @check_if_valid_post
     def get(self, post_id):
@@ -194,6 +199,7 @@ class PostDelete(Handler):
 
 
 class PostEdit(Handler):
+    @check_if_valid_post
     def get(self, post_id):
         """Check permissions and display post edit form."""
         if not self.user:
