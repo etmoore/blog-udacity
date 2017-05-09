@@ -144,7 +144,7 @@ class PostNew(Handler):
         permalink = "/%s" % p.key.id()
         self.redirect(permalink)
 
-def check_if_valid_post(f):
+def check_if_valid_post(f): # TODO: break this out into a helper function file
     @wraps(f)
     def wrapper(self, post_id):
         post = Post.get_by_id(int(post_id))
@@ -168,6 +168,7 @@ class PostShow(Handler):
 
 
 class PostDelete(Handler):
+    @check_if_valid_post
     def get(self, post_id):
         """Check permissions and delete post."""
 
