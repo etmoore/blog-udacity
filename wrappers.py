@@ -1,5 +1,6 @@
 from functools import wraps
-from models import User, Post
+from models import Post
+
 
 def confirm_valid_post(f):
     """Return 404 if post does not exist"""
@@ -11,6 +12,7 @@ def confirm_valid_post(f):
         else:
             return self.error(404)
     return wrapper
+
 
 def confirm_logged_in(f):
     """Redirects to the login page if user is not logged in"""

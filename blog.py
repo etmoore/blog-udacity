@@ -1,20 +1,13 @@
 import os
 import webapp2
 import jinja2
-import re
-import random
-from string import letters
-import hashlib
-import hmac
 import time
-
-from google.appengine.ext import ndb
 
 from models import User, Post, Like, Comment
 from wrappers import confirm_logged_in, confirm_valid_post
 from helpers import (valid_username, valid_password, valid_email,
-                     make_salt, make_pw_hash, confirm_pw,
-                     make_secure_val, check_secure_val)
+                     make_pw_hash, confirm_pw, make_secure_val,
+                     check_secure_val)
 
 # configure jinja2 template engine
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
@@ -99,9 +92,9 @@ class PostShow(Handler):
     @confirm_valid_post
     def get(self, post_id, post):
         """Display the post show page."""
-        post.like_count = Like.query(Like.post_key==post.key).count()
-        post.comments = Comment.query(Comment.post_key==post.key) \
-                            .order(Comment.created).fetch()
+        post.like_count = Like.query(Like.post_key == post.key).count()
+        post.comments = Comment.query(Comment.post_key == post.key) \
+                               .order(Comment.created).fetch()
 
         self.render('post-show.html',
                     post=post,
@@ -115,13 +108,13 @@ class PostDelete(Handler):
         """Check permissions and delete post."""
         if self.user.username == post.author:
             post.key.delete()
-            time.sleep(0.2) # give the ndb operation time to complete
+            time.sleep(0.2)  # give the ndb operation time to complete
             self.redirect('/')
 
         else:
             error = "You do not have permission to perform this action."
-            post.comments = Comment.query(Comment.post_key==post.key) \
-                    .order(Comment.created).fetch()
+            post.comments = Comment.query(Comment.post_key == post.key) \
+                                   .order(Comment.created).fetch()
             return self.render('post-show.html',
                                error=error,
                                post=post,
@@ -138,8 +131,8 @@ class PostEdit(Handler):
             self.render('post-edit.html', post=post)
         else:
             error = "You do not have permission to perform this action."
-            post.comments = Comment.query(Comment.post_key==post.key) \
-                    .order(Comment.created).fetch()
+            post.comments = Comment.query(Comment.post_key == post.key) \
+                                   .order(Comment.created).fetch()
 
             return self.render('post-show.html',
                                error=error,
@@ -163,8 +156,8 @@ class PostLike(Handler):
     def get(self, post_id, post):
         """Create like."""
         post.like_count = Like.query(Like.post_key == post.key).count()
-        post.comments = Comment.query(Comment.post_key==post.key) \
-                .order(Comment.created).fetch()
+        post.comments = Comment.query(Comment.post_key == post.key) \
+                               .order(Comment.created).fetch()
 
         if self.user.key == post.user_key:
             error = "You cannot like your own post."
@@ -172,20 +165,21 @@ class PostLike(Handler):
             return self.render('post-show.html',
                                error=error,
                                post=post,
-                               user = self.user)
+                               user=self.user)
 
         # if the current user has already liked this post, display error
-        if Like.query(Like.post_key==post.key, Like.user_key==self.user.key).get():
+        if Like.query(Like.post_key == post.key,
+                      Like.user_key == self.user.key).get():
             error = "You have already liked this post."
             return self.render('post-show.html',
                                error=error,
                                post=post,
-                               user = self.user)
+                               user=self.user)
 
         l = Like(post_key=post.key, user_key=self.user.key)
         l.put()
 
-        time.sleep(0.2) # give the ndb operation time to complete
+        time.sleep(0.2)  # give the ndb operation time to complete
         self.redirect('/' + post_id)
 
 
@@ -203,7 +197,7 @@ class PostComment(Handler):
                     author=self.user.username,
                     post_key=post.key)
         c.put()
-        time.sleep(0.2) # give the ndb operation time to complete
+        time.sleep(0.2)  # give the ndb operation time to complete
         return self.redirect('/' + post_id)
 
 
@@ -287,7 +281,7 @@ class Logout(Handler):
         self.redirect('/login')
 
 
-#### SERVER STUFF ####
+# SERVER STUFF #
 routes = [
     ('/', PostIndex),
     ('/newpost', PostNew),
