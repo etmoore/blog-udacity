@@ -7,22 +7,19 @@ from string import letters
 import hashlib
 import hmac
 import time
-from functools import wraps
 
 from google.appengine.ext import ndb
 
 from models import User, Post, Like, Comment
+from helpers import confirm_logged_in, confirm_valid_post
 
 # configure jinja2 template engine
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
 
-#### MODELS ####
-
-
 #### BLOG STUFF ####
-
+# TODO: extract these methods into helpers
 def valid_username(username):
     """Confirm username is valid."""
     USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
@@ -110,6 +107,7 @@ class Handler(webapp2.RequestHandler):
     def error(self, status):
         self.render('error.html', status=status)
 
+
 class PostIndex(Handler):
     def get(self):
         """Display the post index page."""
@@ -120,18 +118,14 @@ class PostIndex(Handler):
 
 
 class PostNew(Handler):
+    @confirm_logged_in
     def get(self):
         """Display the new post form."""
-        if not self.user:
-            return self.redirect('/login')
-
         self.render('post-new.html', user=self.user)
 
+    @confirm_logged_in
     def post(self):
         """Save the new post."""
-        if not self.user:
-            return self.redirect('/login')
-
         subject = self.request.get('subject')
         content = self.request.get('content')
 
@@ -144,22 +138,11 @@ class PostNew(Handler):
         permalink = "/%s" % p.key.id()
         self.redirect(permalink)
 
-def check_if_valid_post(f): # TODO: break this out into a helper function file
-    """Return 404 if post does not exist"""
-    @wraps(f)
-    def wrapper(self, post_id):
-        post = Post.get_by_id(int(post_id))
-        if post:
-            return f(self, post_id)
-        else:
-            return self.error(404)
-    return wrapper
 
 class PostShow(Handler):
-    @check_if_valid_post
-    def get(self, post_id):
+    @confirm_valid_post
+    def get(self, post_id, post):
         """Display the post show page."""
-        post = Post.get_by_id(int(post_id))
         post.like_count = Like.query(Like.post_key==post.key).count()
         post.comments = Comment.query(Comment.post_key==post.key) \
                             .order(Comment.created).fetch()
@@ -169,20 +152,11 @@ class PostShow(Handler):
                     user=self.user)
 
 
-# def confirmUserLoggedIn(f):
-#     @wraps(f)
-#     def wrapper(self):
-
-
 class PostDelete(Handler):
-    @check_if_valid_post
-    def get(self, post_id):
+    @confirm_logged_in
+    @confirm_valid_post
+    def get(self, post_id, post):
         """Check permissions and delete post."""
-        if not self.user:
-            return self.redirect('/login')
-
-        post = Post.get_by_id(int(post_id))
-
         if self.user.username == post.author:
             post.key.delete()
             time.sleep(0.2) # give the ndb operation time to complete
@@ -199,69 +173,60 @@ class PostDelete(Handler):
 
 
 class PostEdit(Handler):
-    @check_if_valid_post
-    def get(self, post_id):
-        """Check permissions and display post edit form."""
-        if not self.user:
-            return self.redirect('/login')
-
-        p = Post.get_by_id(int(post_id))
-
+    @confirm_logged_in
+    @confirm_valid_post
+    def get(self, post_id, post):
+        """Display post edit form."""
         # confirm that the user is the post author
-        if self.user.username == p.author:
-            self.render('post-edit.html', post=p)
+        if self.user.username == post.author:
+            self.render('post-edit.html', post=post)
         else:
             error = "You do not have permission to perform this action."
-            p.comments = Comment.query(Comment.post_key==p.key) \
+            post.comments = Comment.query(Comment.post_key==post.key) \
                     .order(Comment.created).fetch()
 
             return self.render('post-show.html',
                                error=error,
                                user=self.user,
-                               post=p)
+                               post=post)
 
-    def post(self, post_id):
+    @confirm_logged_in
+    @confirm_valid_post
+    def post(self, post_id, post):
         """Save the edited post."""
-        if not self.user:
-            return self.redirect('/login')
-
-        p = Post.get_by_id(int(post_id))
-
-        p.subject = self.request.get('subject')
-        p.content = self.request.get('content')
-        p.put()
+        post.subject = self.request.get('subject')
+        post.content = self.request.get('content')
+        post.put()
 
         self.redirect('/' + post_id)
 
 
 class PostLike(Handler):
-    def get(self, post_id):
+    @confirm_logged_in
+    @confirm_valid_post
+    def get(self, post_id, post):
         """Create like."""
-        if not self.user:
-            return self.redirect('/login')
-
-        p = Post.get_by_id(int(post_id))
-        p.like_count = Like.query(Like.post_key == p.key).count()
-        p.comments = Comment.query(Comment.post_key==p.key) \
+        post.like_count = Like.query(Like.post_key == post.key).count()
+        post.comments = Comment.query(Comment.post_key==post.key) \
                 .order(Comment.created).fetch()
 
-        if self.user.key == p.user_key:
+        if self.user.key == post.user_key:
             error = "You cannot like your own post."
 
             return self.render('post-show.html',
                                error=error,
-                               post=p,
+                               post=post,
                                user = self.user)
 
         # if the current user has already liked this post, display error
-        if Like.query(Like.post_key==p.key, Like.user_key==self.user.key).get():
+        if Like.query(Like.post_key==post.key, Like.user_key==self.user.key).get():
             error = "You have already liked this post."
             return self.render('post-show.html',
                                error=error,
-                               post=p,
+                               post=post,
                                user = self.user)
 
-        l = Like(post_key=p.key, user_key=self.user.key)
+        l = Like(post_key=post.key, user_key=self.user.key)
         l.put()
 
         time.sleep(0.2) # give the ndb operation time to complete
@@ -269,13 +234,12 @@ class PostLike(Handler):
 
 
 class PostComment(Handler):
-    def post(self, post_id):
+    @confirm_logged_in
+    @confirm_valid_post
+    def post(self, post_id, post):
         """Create a comment if the user is logged in."""
-        if not self.user:
-            return self.redirect('/login')
         # grab the content, user, etc. related to the comment
         content = self.request.get('content')
-        post = Post.get_by_id(int(post_id))
 
         # create the comment
         c = Comment(user_key=self.user.key,
@@ -337,11 +301,9 @@ class Signup(Handler):
 
 class Welcome(Handler):
     """Display the welcome page."""
+    @confirm_logged_in
     def get(self):
-        if self.user:
-            self.render('welcome.html', user=self.user)
-        else:
-            self.redirect('/signup')
+        self.render('welcome.html', user=self.user)
 
 
 class Login(Handler):
