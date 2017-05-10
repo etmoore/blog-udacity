@@ -198,7 +198,7 @@ class PostComment(Handler):
                     post_key=post.key)
         c.put()
         time.sleep(0.2)  # give the ndb operation time to complete
-        return self.redirect('/' + post_id)
+        self.redirect('/' + post_id)
 
 
 class Signup(Handler):
