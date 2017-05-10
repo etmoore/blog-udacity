@@ -29,7 +29,7 @@ def confirm_user_owns_post(f):
     """Displays error if the user is not the post owner."""
     @wraps(f)
     def wrapper(self, post_id, post, *args, **kwargs):
-        if self.user.username == post.author:
+        if self.user.key == post.user_key:
             return f(self, post_id, post, *args, **kwargs)
         else:
             error = "You do not have permission to perform this action."

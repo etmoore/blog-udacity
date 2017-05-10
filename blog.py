@@ -81,7 +81,6 @@ class PostNew(Handler):
 
         p = Post(subject=subject,
                  content=content,
-                 author=self.user.username,
                  user_key=self.user.key)
         p.put()
 
@@ -108,19 +107,9 @@ class PostDelete(Handler):
     @confirm_user_owns_post
     def get(self, post_id, post):
         """Check permissions and delete post."""
-        if self.user.username == post.author:
-            post.key.delete()
-            time.sleep(0.2)  # give the ndb operation time to complete
-            self.redirect('/')
-
-        else:
-            error = "You do not have permission to perform this action."
-            post.comments = Comment.query(Comment.post_key == post.key) \
-                                   .order(Comment.created).fetch()
-            return self.render('post-show.html',
-                               error=error,
-                               post=post,
-                               user=self.user)
+        post.key.delete()
+        time.sleep(0.2)  # give the ndb operation time to complete
+        self.redirect('/')
 
 
 class PostEdit(Handler):
@@ -165,11 +154,10 @@ class PostComment(Handler):
         content = self.request.get('content')
 
         # create the comment
-        c = Comment(user_key=self.user.key,
+        comment = Comment(user_key=self.user.key,
                     content=content,
-                    author=self.user.username,
                     post_key=post.key)
-        c.put()
+        comment.put()
         time.sleep(0.2)  # give the ndb operation time to complete
         self.redirect('/' + post_id)
 

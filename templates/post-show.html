@@ -44,7 +44,7 @@
             {{comment.content}}
           </div>
           <div class="panel-footer">
-            Author: {{comment.author}} | Created: {{comment.created.strftime('%m/%d/%Y %-I:%M %p')}}
+            Author: {{comment.get_author()}} | Created: {{comment.created.strftime('%m/%d/%Y %-I:%M %p')}}
           </div>
         </div>
       {% endfor %}
