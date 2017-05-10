@@ -105,6 +105,7 @@ class PostShow(Handler):
 class PostDelete(Handler):
     @confirm_logged_in
     @confirm_post_exists
+    @confirm_user_owns_post
     def get(self, post_id, post):
         """Check permissions and delete post."""
         if self.user.username == post.author:
