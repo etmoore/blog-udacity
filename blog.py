@@ -4,7 +4,8 @@ import jinja2
 import time
 
 from models import User, Post, Like, Comment
-from wrappers import confirm_logged_in, confirm_post_exists
+from wrappers import (confirm_logged_in, confirm_post_exists,
+                      confirm_user_owns_post)
 from helpers import (valid_username, valid_password, valid_email,
                      make_pw_hash, confirm_pw, make_secure_val,
                      check_secure_val)
@@ -124,23 +125,14 @@ class PostDelete(Handler):
 class PostEdit(Handler):
     @confirm_logged_in
     @confirm_post_exists
+    @confirm_user_owns_post
     def get(self, post_id, post):
         """Display post edit form."""
-        # confirm that the user is the post author
-        if self.user.username == post.author:
-            self.render('post-edit.html', post=post)
-        else:
-            error = "You do not have permission to perform this action."
-            post.comments = Comment.query(Comment.post_key == post.key) \
-                                   .order(Comment.created).fetch()
-
-            return self.render('post-show.html',
-                               error=error,
-                               user=self.user,
-                               post=post)
+        self.render('post-edit.html', post=post)
 
     @confirm_logged_in
     @confirm_post_exists
+    @confirm_user_owns_post
     def post(self, post_id, post):
         """Save the edited post."""
         post.subject = self.request.get('subject')
@@ -176,8 +168,8 @@ class PostLike(Handler):
                                post=post,
                                user=self.user)
 
-        l = Like(post_key=post.key, user_key=self.user.key)
-        l.put()
+        like = Like(post_key=post.key, user_key=self.user.key)
+        like.put()
 
         time.sleep(0.2)  # give the ndb operation time to complete
         self.redirect('/' + post_id)

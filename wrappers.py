@@ -1,5 +1,5 @@
 from functools import wraps
-from models import Post
+from models import Post, Comment
 
 
 def confirm_post_exists(f):
@@ -22,6 +22,24 @@ def confirm_logged_in(f):
             return f(self, *args, **kwargs)
         else:
             return self.redirect('/login')
+    return wrapper
+
+
+def confirm_user_owns_post(f):
+    """Redirects to the login page if user is not logged in"""
+    @wraps(f)
+    def wrapper(self, post_id, post, *args, **kwargs):
+        if self.user.username == post.author:
+            return f(self, post_id, post, *args, **kwargs)
+        else:
+            error = "You do not have permission to perform this action."
+            post.comments = Comment.query(Comment.post_key == post.key) \
+                                   .order(Comment.created).fetch()
+
+            return self.render('post-show.html',
+                               error=error,
+                               user=self.user,
+                               post=post)
     return wrapper
 
 
