@@ -4,7 +4,7 @@ import jinja2
 import time
 
 from models import User, Post, Like, Comment
-from wrappers import confirm_logged_in, confirm_valid_post
+from wrappers import confirm_logged_in, confirm_post_exists
 from helpers import (valid_username, valid_password, valid_email,
                      make_pw_hash, confirm_pw, make_secure_val,
                      check_secure_val)
@@ -89,7 +89,7 @@ class PostNew(Handler):
 
 
 class PostShow(Handler):
-    @confirm_valid_post
+    @confirm_post_exists
     def get(self, post_id, post):
         """Display the post show page."""
         post.like_count = Like.query(Like.post_key == post.key).count()
@@ -103,7 +103,7 @@ class PostShow(Handler):
 
 class PostDelete(Handler):
     @confirm_logged_in
-    @confirm_valid_post
+    @confirm_post_exists
     def get(self, post_id, post):
         """Check permissions and delete post."""
         if self.user.username == post.author:
@@ -123,7 +123,7 @@ class PostDelete(Handler):
 
 class PostEdit(Handler):
     @confirm_logged_in
-    @confirm_valid_post
+    @confirm_post_exists
     def get(self, post_id, post):
         """Display post edit form."""
         # confirm that the user is the post author
@@ -140,7 +140,7 @@ class PostEdit(Handler):
                                post=post)
 
     @confirm_logged_in
-    @confirm_valid_post
+    @confirm_post_exists
     def post(self, post_id, post):
         """Save the edited post."""
         post.subject = self.request.get('subject')
@@ -152,7 +152,7 @@ class PostEdit(Handler):
 
 class PostLike(Handler):
     @confirm_logged_in
-    @confirm_valid_post
+    @confirm_post_exists
     def get(self, post_id, post):
         """Create like."""
         post.like_count = Like.query(Like.post_key == post.key).count()
@@ -185,7 +185,7 @@ class PostLike(Handler):
 
 class PostComment(Handler):
     @confirm_logged_in
-    @confirm_valid_post
+    @confirm_post_exists
     def post(self, post_id, post):
         """Create a comment if the user is logged in."""
         # grab the content, user, etc. related to the comment

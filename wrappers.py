@@ -2,7 +2,7 @@ from functools import wraps
 from models import Post
 
 
-def confirm_valid_post(f):
+def confirm_post_exists(f):
     """Return 404 if post does not exist"""
     @wraps(f)
     def wrapper(self, post_id, *args, **kwargs):
