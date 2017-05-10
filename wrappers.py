@@ -1,5 +1,5 @@
 from functools import wraps
-from models import Post, Comment
+from models import Post, Comment, Like
 
 
 def confirm_post_exists(f):
@@ -26,7 +26,7 @@ def confirm_logged_in(f):
 
 
 def confirm_user_owns_post(f):
-    """Redirects to the login page if user is not logged in"""
+    """Displays error if the user is not the post owner."""
     @wraps(f)
     def wrapper(self, post_id, post, *args, **kwargs):
         if self.user.username == post.author:
@@ -43,3 +43,29 @@ def confirm_user_owns_post(f):
     return wrapper
 
 
+def confirm_like_allowed(f):
+    """Displays error if the user has already liked a post or is post owner."""
+    @wraps(f)
+    def wrapper(self, post_id, post, *args, **kwargs):
+        post.like_count = Like.query(Like.post_key == post.key).count()
+        post.comments = Comment.query(Comment.post_key == post.key) \
+                               .order(Comment.created).fetch()
+
+        if self.user.key == post.user_key:
+            error = "You cannot like your own post."
+            return self.render('post-show.html',
+                               error=error,
+                               post=post,
+                               user=self.user)
+
+        if Like.query(Like.post_key == post.key,
+                      Like.user_key == self.user.key).get():
+            error = "You have already liked this post."
+            return self.render('post-show.html',
+                               error=error,
+                               post=post,
+                               user=self.user)
+
+        else:
+            return f(self, post_id, post, *args, **kwargs)
+    return wrapper

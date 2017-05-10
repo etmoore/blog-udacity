@@ -5,7 +5,7 @@ import time
 
 from models import User, Post, Like, Comment
 from wrappers import (confirm_logged_in, confirm_post_exists,
-                      confirm_user_owns_post)
+                      confirm_user_owns_post, confirm_like_allowed)
 from helpers import (valid_username, valid_password, valid_email,
                      make_pw_hash, confirm_pw, make_secure_val,
                      check_secure_val)
@@ -145,29 +145,9 @@ class PostEdit(Handler):
 class PostLike(Handler):
     @confirm_logged_in
     @confirm_post_exists
+    @confirm_like_allowed
     def get(self, post_id, post):
         """Create like."""
-        post.like_count = Like.query(Like.post_key == post.key).count()
-        post.comments = Comment.query(Comment.post_key == post.key) \
-                               .order(Comment.created).fetch()
-
-        if self.user.key == post.user_key:
-            error = "You cannot like your own post."
-
-            return self.render('post-show.html',
-                               error=error,
-                               post=post,
-                               user=self.user)
-
-        # if the current user has already liked this post, display error
-        if Like.query(Like.post_key == post.key,
-                      Like.user_key == self.user.key).get():
-            error = "You have already liked this post."
-            return self.render('post-show.html',
-                               error=error,
-                               post=post,
-                               user=self.user)
-
         like = Like(post_key=post.key, user_key=self.user.key)
         like.put()
 
